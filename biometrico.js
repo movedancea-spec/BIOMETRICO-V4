@@ -67,21 +67,21 @@ console.warn("Audio no disponible:", e);
 
 function playKeySound(){
 
-playTone(650, 0.06, 0.5, "sine");
+playTone(650, 0.06, 0.9, "sine");
 
 }
 
 function playSuccessSound(){
 
-playTone(740, 0.16, 0.7, "sine");
+playTone(740, 0.16, 0.9, "sine");
 
-setTimeout(()=>playTone(1100, 0.28, 0.7, "sine"), 130);
+setTimeout(()=>playTone(1100, 0.28, 0.9, "sine"), 130);
 
 }
 
 function playErrorSound(){
 
-playTone(200, 0.35, 0.6, "sawtooth");
+playTone(200, 0.35, 0.9, "sawtooth");
 
 }
 
