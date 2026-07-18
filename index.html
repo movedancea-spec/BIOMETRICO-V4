@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOVE CHECK-IN V2 (prueba)</title>
+<meta name="theme-color" content="#ef4b9b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="biometrico.css">
+</head>
+<body>
+<!-- Fondo -->
+<div class="background"></div>
+
+<div id="particles"></div>
+<div class="floating floating1"></div>
+<div class="floating floating2"></div>
+<div class="floating floating3"></div>
+<div class="floating floating4"></div>
+<!-- Tarjeta -->
+<main class="container">
+    <!-- Logo -->
+    <img
+        src="logo.png"
+        class="logo"
+        alt="MOVE">
+    <!-- Título -->
+    <div id="title" class="title">
+        Registro de Asistencia
+    </div>
+    <!-- Saludo -->
+    <div id="greeting" class="greeting">
+        Bienvenida
+    </div>
+    <!-- Hora -->
+    <div id="clock" class="clock">
+        00:00
+    </div>
+    <!-- Foto -->
+    <div
+        id="photoContainer"
+        class="photo-container">
+        <div class="photo-ring">
+            <img
+                id="photo"
+                class="photo">
+        </div>
+    </div>
+    <!-- Nombre -->
+    <div id="studentName" class="student-name">
+    </div>
+    <!-- Mensaje -->
+    <div id="message" class="message">
+        Ingresa tu código
+    </div>
+    <!-- Cumpleaños -->
+    <div
+        id="birthday"
+        class="birthday">
+    </div>
+    <!-- Hora registro -->
+    <div
+        id="registerTime"
+        class="register-time">
+    </div>
+    <!-- Código -->
+    <div
+        id="dots"
+        class="dots">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    <!-- Teclado -->
+    <div
+        id="pad"
+        class="pad">
+    </div>
+</main>
+<!-- Confetti -->
+<canvas id="confetti"></canvas>
+<script src="biometrico.js"></script>
+</body>
+</html>
