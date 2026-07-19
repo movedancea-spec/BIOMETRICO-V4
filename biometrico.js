@@ -67,21 +67,21 @@ console.warn("Audio no disponible:", e);
 
 function playKeySound(){
 
-playTone(650, 0.06, 0.9, "sine");
+playTone(650, 0.06, 0.5, "sine");
 
 }
 
 function playSuccessSound(){
 
-playTone(740, 0.16, 0.9, "sine");
+playTone(740, 0.16, 0.7, "sine");
 
-setTimeout(()=>playTone(1100, 0.28, 0.9, "sine"), 130);
+setTimeout(()=>playTone(1100, 0.28, 0.7, "sine"), 130);
 
 }
 
 function playErrorSound(){
 
-playTone(200, 0.35, 0.9, "sawtooth");
+playTone(200, 0.35, 0.6, "sawtooth");
 
 }
 
@@ -108,6 +108,18 @@ document.getElementById("photoContainer");
 
 const clock =
 document.getElementById("clock");
+
+const teacherActions =
+document.getElementById("teacherActions");
+
+const btnEntrada =
+document.getElementById("btnEntrada");
+
+const btnSalida =
+document.getElementById("btnSalida");
+
+const photoRing =
+document.querySelector(".photo-ring");
 
 // -------------------------------------
 // MENSAJES
@@ -176,6 +188,8 @@ let waitingIndex=0;
 let previewActivo=false;
 
 let previewTimeout=null;
+
+let tipoActual=null;
 
 // -------------------------------------
 // RELOJ
@@ -357,6 +371,22 @@ pad.appendChild(boton);
 
 });
 
+btnEntrada.addEventListener("click",()=>{
+
+playKeySound();
+
+confirmarAsistencia("ENTRADA");
+
+});
+
+btnSalida.addEventListener("click",()=>{
+
+playKeySound();
+
+confirmarAsistencia("SALIDA");
+
+});
+
 // -------------------------------------
 // ACTUALIZAR PUNTOS
 // -------------------------------------
@@ -511,7 +541,7 @@ mostrarError("⚠ Error de conexión");
 // manda el WhatsApp)
 // -------------------------------------
 
-async function confirmarAsistencia(){
+async function confirmarAsistencia(tipoRegistro){
 
 message.innerHTML="⏳ Registrando...";
 
@@ -535,7 +565,11 @@ body:JSON.stringify({
 
 codigo:codigo,
 
-accion:"confirmar"
+accion:"confirmar",
+
+tipo:tipoActual,
+
+tipoRegistro:tipoRegistro
 
 })
 
@@ -575,6 +609,8 @@ function mostrarPreview(datos){
 
 previewActivo=true;
 
+tipoActual=datos.tipo;
+
 clearTimeout(previewTimeout);
 
 previewTimeout=setTimeout(()=>{
@@ -597,11 +633,35 @@ photo.src=datos.foto[0].url;
 
 studentName.innerHTML=datos.nombre;
 
-message.innerHTML="¿Eres tú? Presiona ✓ para confirmar";
-
 registerTime.innerHTML="";
 
 birthday.innerHTML="";
+
+if(datos.tipo==="maestra"){
+
+photoRing.classList.add("photo-ring-maestra");
+
+message.innerHTML=
+
+"👩‍🏫 <span class='teacher-badge'>MAESTRA</span><br>¿Eres tú? Marca tu entrada o salida:";
+
+pad.style.display="none";
+
+teacherActions.style.display="flex";
+
+}
+
+else{
+
+photoRing.classList.remove("photo-ring-maestra");
+
+message.innerHTML="¿Eres tú? Presiona ✓ para confirmar";
+
+pad.style.display="grid";
+
+teacherActions.style.display="none";
+
+}
 
 photoContainer.animate(
 
@@ -665,6 +725,22 @@ photo.src=datos.foto[0].url;
 
 studentName.innerHTML=datos.nombre;
 
+teacherActions.style.display="none";
+
+pad.style.display="grid";
+
+if(datos.tipo==="maestra"){
+
+const accionTexto = datos.tipoRegistro==="SALIDA" ? "Salida" : "Entrada";
+
+message.innerHTML =
+
+"✅ " + accionTexto + " registrada. ¡Gracias por tu trabajo! 💕";
+
+}
+
+else{
+
 const frase=
 
 successMessages[
@@ -678,6 +754,8 @@ Math.random()*successMessages.length
 ];
 
 message.innerHTML=frase;
+
+}
 
 const ahora = new Date();
 
@@ -757,6 +835,14 @@ playErrorSound();
 
 previewActivo=false;
 
+tipoActual=null;
+
+photoRing.classList.remove("photo-ring-maestra");
+
+teacherActions.style.display="none";
+
+pad.style.display="grid";
+
 clearTimeout(previewTimeout);
 
 codigo="";
@@ -782,6 +868,14 @@ photoContainer.style.display="none";
 function reiniciar(){
 
 previewActivo=false;
+
+tipoActual=null;
+
+photoRing.classList.remove("photo-ring-maestra");
+
+teacherActions.style.display="none";
+
+pad.style.display="grid";
 
 clearTimeout(previewTimeout);
 
