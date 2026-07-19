@@ -1,6 +1,6 @@
 /* ===================================================
    MOVE ACCESS v2
-   Diseñado para MOVE Dance Academy
+   DiseÃ±ado para MOVE Dance Academy
 =================================================== */
 
 *{
@@ -69,7 +69,7 @@ animation:gradientMove 18s ease infinite;
 }
 
 /*=====================================
-PARTÍCULAS
+PARTÃCULAS
 =====================================*/
 
 .background{
@@ -258,7 +258,7 @@ transform:translateY(-8px);
 }
 
 /*=====================================
-TÍTULOS
+TÃTULOS
 =====================================*/
 
 .title{
@@ -375,6 +375,111 @@ background-position:300%;
 
 }
 
+/*=====================================
+ANILLO MAESTRAS (dorado/azul, distinto
+al de alumnas para que se note al toque)
+=====================================*/
+
+.photo-ring-maestra{
+
+background:
+
+linear-gradient(
+
+135deg,
+
+#3b82f6,
+
+#FFD700,
+
+#3b82f6
+
+);
+
+box-shadow:
+
+0 0 35px rgba(59,130,246,.45);
+
+}
+
+.teacher-badge{
+
+display:inline-block;
+
+margin-top:8px;
+
+padding:6px 16px;
+
+border-radius:999px;
+
+background:linear-gradient(90deg,#3b82f6,#60a5fa);
+
+color:white;
+
+font-weight:700;
+
+font-size:clamp(13px,3.5vw,16px);
+
+}
+
+/*=====================================
+BOTONES ENTRADA / SALIDA (maestras)
+=====================================*/
+
+.teacher-actions{
+
+display:none;
+
+flex-direction:column;
+
+gap:14px;
+
+margin:20px 0;
+
+}
+
+.teacher-actions button{
+
+border:none;
+
+border-radius:20px;
+
+padding:clamp(16px,5vw,22px);
+
+font-size:clamp(17px,5vw,22px);
+
+font-weight:700;
+
+color:white;
+
+cursor:pointer;
+
+transition:.18s;
+
+}
+
+.btn-entrada{
+
+background:linear-gradient(180deg,#34d399,#059669);
+
+box-shadow:0 8px 20px rgba(5,150,105,.30);
+
+}
+
+.btn-salida{
+
+background:linear-gradient(180deg,#60a5fa,#2563eb);
+
+box-shadow:0 8px 20px rgba(37,99,235,.30);
+
+}
+
+.teacher-actions button:active{
+
+transform:scale(.96);
+
+}
+
 @keyframes fadeZoom{
 
 from{
@@ -436,7 +541,7 @@ transform .5s;
 }
 
 /*=====================================
-CUMPLEAÑOS
+CUMPLEAÃ‘OS
 =====================================*/
 
 .birthday{
@@ -607,7 +712,7 @@ pointer-events:none;
 RESPONSIVE
 =====================================*/
 
-/* Celulares muy angostos: reduce un poco más el margen del contenedor */
+/* Celulares muy angostos: reduce un poco mÃ¡s el margen del contenedor */
 @media(max-width:360px){
 
 .container{
@@ -764,7 +869,7 @@ transform:translateY(0);
 
 }
 /*=====================================
-PARTÍCULAS
+PARTÃCULAS
 =====================================*/
 
 #particles{
