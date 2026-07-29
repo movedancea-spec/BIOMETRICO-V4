@@ -118,6 +118,12 @@ document.getElementById("btnEntrada");
 const btnSalida =
 document.getElementById("btnSalida");
 
+const studentConfirm =
+document.getElementById("studentConfirm");
+
+const btnConfirmar =
+document.getElementById("btnConfirmar");
+
 const photoRing =
 document.querySelector(".photo-ring");
 
@@ -384,6 +390,14 @@ btnSalida.addEventListener("click",()=>{
 playKeySound();
 
 confirmarAsistencia("SALIDA");
+
+});
+
+btnConfirmar.addEventListener("click",()=>{
+
+playKeySound();
+
+confirmarAsistencia();
 
 });
 
@@ -659,6 +673,8 @@ pad.style.display="none";
 
 teacherActions.style.display="flex";
 
+studentConfirm.style.display="none";
+
 }
 
 else{
@@ -667,9 +683,11 @@ photoRing.classList.remove("photo-ring-maestra");
 
 message.innerHTML="¿Eres tú? Presiona ✓ para confirmar";
 
-pad.style.display="grid";
+pad.style.display="none";
 
 teacherActions.style.display="none";
+
+studentConfirm.style.display="flex";
 
 }
 
@@ -738,6 +756,8 @@ studentName.innerHTML=datos.nombre;
 teacherActions.style.display="none";
 
 pad.style.display="grid";
+
+studentConfirm.style.display="none";
 
 if(datos.tipo==="maestra"){
 
@@ -853,6 +873,8 @@ teacherActions.style.display="none";
 
 pad.style.display="grid";
 
+studentConfirm.style.display="none";
+
 clearTimeout(previewTimeout);
 
 codigo="";
@@ -886,6 +908,8 @@ photoRing.classList.remove("photo-ring-maestra");
 teacherActions.style.display="none";
 
 pad.style.display="grid";
+
+studentConfirm.style.display="none";
 
 clearTimeout(previewTimeout);
 
