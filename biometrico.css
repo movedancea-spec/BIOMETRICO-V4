@@ -801,7 +801,7 @@ margin:20px auto;
 
 /* Pantallas bajitas (celular en horizontal, o kiosco chico):
    reduce espacios verticales para que todo quepa sin cortarse */
-@media(max-height:640px){
+@media(max-height:800px){
 
 .container{
 
@@ -834,6 +834,46 @@ margin:clamp(10px,3vw,18px) 0;
 .pad button{
 
 height:clamp(44px,10vh,64px);
+
+}
+
+.photo-container{
+
+margin:clamp(8px,2vh,20px) 0;
+
+}
+
+.photo{
+
+width:clamp(90px,22vh,150px);
+
+height:clamp(90px,22vh,150px);
+
+}
+
+.student-confirm{
+
+margin:clamp(8px,2vh,14px) 0;
+
+}
+
+.student-confirm .btn-confirmar{
+
+padding:clamp(12px,3.5vh,20px) clamp(22px,8vw,42px);
+
+}
+
+.teacher-actions{
+
+margin:clamp(10px,3vh,20px) 0;
+
+gap:clamp(8px,2vh,14px);
+
+}
+
+.teacher-actions button{
+
+padding:clamp(12px,3.5vh,22px);
 
 }
 
