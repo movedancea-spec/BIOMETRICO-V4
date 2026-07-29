@@ -913,7 +913,79 @@ waitingMessages[0];
 // CONFETTI (VERSIÓN SIMPLE)
 // -------------------------------------
 
+// -------------------------------------
+// SONIDO de cumpleaños + confeti
+// (se genera con Web Audio, no necesita
+// ningún archivo de audio externo)
+// -------------------------------------
+
+function sonidoCumpleanos(){
+
+try{
+
+const ctx=new (window.AudioContext||window.webkitAudioContext)();
+
+// Arpegio alegre (do-mi-sol-do agudo)
+const notas=[523.25,659.25,783.99,1046.5];
+
+notas.forEach((freq,i)=>{
+
+const o=ctx.createOscillator();
+const g=ctx.createGain();
+o.type="triangle";
+o.frequency.value=freq;
+o.connect(g);
+g.connect(ctx.destination);
+
+const t0=ctx.currentTime+i*0.12;
+g.gain.setValueAtTime(0.0001,t0);
+g.gain.exponentialRampToValueAtTime(0.25,t0+0.02);
+g.gain.exponentialRampToValueAtTime(0.0001,t0+0.35);
+
+o.start(t0);
+o.stop(t0+0.4);
+
+});
+
+// Pops de confeti explotando (ruido filtrado, varios "pop" en cadena)
+const popTimes=[0.05,0.15,0.28,0.42,0.6];
+
+popTimes.forEach(delay=>{
+
+const duracion=0.06;
+const bufferSize=Math.floor(ctx.sampleRate*duracion);
+const buffer=ctx.createBuffer(1,bufferSize,ctx.sampleRate);
+const data=buffer.getChannelData(0);
+
+for(let i=0;i<bufferSize;i++){
+data[i]=(Math.random()*2-1)*(1-i/bufferSize);
+}
+
+const noise=ctx.createBufferSource();
+noise.buffer=buffer;
+
+const filtro=ctx.createBiquadFilter();
+filtro.type="bandpass";
+filtro.frequency.value=1000+Math.random()*900;
+
+const g2=ctx.createGain();
+g2.gain.value=0.35;
+
+noise.connect(filtro);
+filtro.connect(g2);
+g2.connect(ctx.destination);
+
+noise.start(ctx.currentTime+delay);
+
+});
+
+}catch(e){}
+
+}
+
 function lanzarConfetti(){
+
+sonidoCumpleanos();
 
 const canvas=document.getElementById("confetti");
 
