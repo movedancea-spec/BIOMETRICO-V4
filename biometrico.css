@@ -191,7 +191,11 @@ width:92%;
 
 max-width:540px;
 
-margin:40px auto;
+max-height:calc(100dvh - 40px);
+
+overflow-y:auto;
+
+margin:20px auto;
 
 padding:clamp(20px,6vw,35px);
 
