@@ -434,7 +434,11 @@ BOTONES ENTRADA / SALIDA (maestras)
 
 display:none;
 
-flex-direction:column;
+flex-direction:row;
+
+justify-content:center;
+
+flex-wrap:wrap;
 
 gap:14px;
 
@@ -446,11 +450,11 @@ margin:20px 0;
 
 border:none;
 
-border-radius:20px;
+border-radius:18px;
 
-padding:clamp(16px,5vw,22px);
+padding:clamp(13px,4vw,18px) clamp(16px,5vw,20px);
 
-font-size:clamp(17px,5vw,22px);
+font-size:clamp(14px,4vw,18px);
 
 font-weight:700;
 
