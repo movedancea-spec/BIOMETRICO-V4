@@ -480,6 +480,42 @@ transform:scale(.96);
 
 }
 
+.student-confirm{
+
+display:none;
+
+margin:20px 0;
+
+}
+
+.student-confirm .btn-confirmar{
+
+border:none;
+
+border-radius:20px;
+
+padding:clamp(18px,6vw,26px) clamp(40px,14vw,70px);
+
+font-size:clamp(20px,6vw,26px);
+
+font-weight:800;
+
+color:white;
+
+cursor:pointer;
+
+background:linear-gradient(180deg,#ff7fb3,#ef4b9b);
+
+box-shadow:0 8px 20px rgba(239,75,155,.35);
+
+}
+
+.student-confirm .btn-confirmar:active{
+
+transform:scale(.96);
+
+}
+
 @keyframes fadeZoom{
 
 from{
