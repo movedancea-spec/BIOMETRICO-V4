@@ -923,7 +923,7 @@ function sonidoCumpleanos(){
 
 try{
 
-const ctx=new (window.AudioContext||window.webkitAudioContext)();
+const ctx=getAudioCtx();
 
 // Arpegio alegre (do-mi-sol-do agudo)
 const notas=[523.25,659.25,783.99,1046.5];
