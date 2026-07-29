@@ -637,6 +637,16 @@ registerTime.innerHTML="";
 
 birthday.innerHTML="";
 
+if(datos.cumpleHoy){
+
+birthday.innerHTML=
+
+"🎂 ¡FELIZ CUMPLEAÑOS! 🎉";
+
+lanzarConfetti();
+
+}
+
 if(datos.tipo==="maestra"){
 
 photoRing.classList.add("photo-ring-maestra");
