@@ -124,6 +124,9 @@ document.getElementById("studentConfirm");
 const btnConfirmar =
 document.getElementById("btnConfirmar");
 
+const btnNoSoyYo =
+document.getElementById("btnNoSoyYo");
+
 const photoRing =
 document.querySelector(".photo-ring");
 
@@ -398,6 +401,14 @@ btnConfirmar.addEventListener("click",()=>{
 playKeySound();
 
 confirmarAsistencia();
+
+});
+
+btnNoSoyYo.addEventListener("click",()=>{
+
+playKeySound();
+
+reiniciar();
 
 });
 

@@ -484,6 +484,12 @@ transform:scale(.96);
 
 display:none;
 
+flex-direction:column;
+
+align-items:center;
+
+gap:14px;
+
 margin:20px 0;
 
 }
@@ -513,6 +519,34 @@ box-shadow:0 8px 20px rgba(239,75,155,.35);
 .student-confirm .btn-confirmar:active{
 
 transform:scale(.96);
+
+}
+
+.student-confirm .btn-no-soy-yo{
+
+border:1.5px solid rgba(255,255,255,.35);
+
+border-radius:16px;
+
+padding:clamp(10px,3vw,14px) clamp(24px,7vw,34px);
+
+font-size:clamp(14px,4vw,16px);
+
+font-weight:600;
+
+color:rgba(255,255,255,.85);
+
+background:rgba(255,255,255,.06);
+
+cursor:pointer;
+
+}
+
+.student-confirm .btn-no-soy-yo:active{
+
+transform:scale(.96);
+
+background:rgba(255,255,255,.12);
 
 }
 
