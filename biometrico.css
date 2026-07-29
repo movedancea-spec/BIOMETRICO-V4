@@ -484,13 +484,17 @@ transform:scale(.96);
 
 display:none;
 
-flex-direction:column;
+flex-direction:row;
+
+justify-content:center;
 
 align-items:center;
 
-gap:14px;
+flex-wrap:wrap;
 
-margin:20px 0;
+gap:10px;
+
+margin:14px 0;
 
 }
 
@@ -498,11 +502,11 @@ margin:20px 0;
 
 border:none;
 
-border-radius:20px;
+border-radius:18px;
 
-padding:clamp(18px,6vw,26px) clamp(40px,14vw,70px);
+padding:clamp(14px,4.5vw,20px) clamp(26px,9vw,42px);
 
-font-size:clamp(20px,6vw,26px);
+font-size:clamp(16px,4.5vw,20px);
 
 font-weight:800;
 
@@ -524,19 +528,19 @@ transform:scale(.96);
 
 .student-confirm .btn-no-soy-yo{
 
-border:1.5px solid rgba(255,255,255,.35);
+border:1.5px solid #ef4b9b;
 
 border-radius:16px;
 
-padding:clamp(10px,3vw,14px) clamp(24px,7vw,34px);
+padding:clamp(10px,3.5vw,14px) clamp(18px,6vw,28px);
 
-font-size:clamp(14px,4vw,16px);
+font-size:clamp(13px,3.8vw,15px);
 
-font-weight:600;
+font-weight:700;
 
-color:rgba(255,255,255,.85);
+color:#ef4b9b;
 
-background:rgba(255,255,255,.06);
+background:rgba(255,255,255,.6);
 
 cursor:pointer;
 
@@ -546,7 +550,7 @@ cursor:pointer;
 
 transform:scale(.96);
 
-background:rgba(255,255,255,.12);
+background:rgba(239,75,155,.12);
 
 }
 
