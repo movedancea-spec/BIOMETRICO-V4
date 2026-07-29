@@ -534,7 +534,7 @@ transform:scale(.96);
 
 }
 
-.student-confirm .btn-no-soy-yo{
+button.btn-no-soy-yo{
 
 border:1.5px solid #ef4b9b;
 
@@ -554,7 +554,7 @@ cursor:pointer;
 
 }
 
-.student-confirm .btn-no-soy-yo:active{
+button.btn-no-soy-yo:active{
 
 transform:scale(.96);
 

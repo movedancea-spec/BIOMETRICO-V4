@@ -127,6 +127,9 @@ document.getElementById("btnConfirmar");
 const btnNoSoyYo =
 document.getElementById("btnNoSoyYo");
 
+const btnNoSoyYoMaestra =
+document.getElementById("btnNoSoyYoMaestra");
+
 const photoRing =
 document.querySelector(".photo-ring");
 
@@ -405,6 +408,14 @@ confirmarAsistencia();
 });
 
 btnNoSoyYo.addEventListener("click",()=>{
+
+playKeySound();
+
+reiniciar();
+
+});
+
+btnNoSoyYoMaestra.addEventListener("click",()=>{
 
 playKeySound();
 
