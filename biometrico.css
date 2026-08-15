@@ -225,7 +225,9 @@ z-index:20;
 LOGO
 =====================================*/
 
-.logo{
+.logo-wrap{
+
+position:relative;
 
 width:95%;
 
@@ -233,9 +235,15 @@ max-width:340px;
 
 margin:auto;
 
-display:block;
-
 margin-bottom:10px;
+
+}
+
+.logo{
+
+width:100%;
+
+display:block;
 
 animation:logoFloat 5s ease-in-out infinite;
 
@@ -819,7 +827,7 @@ padding:clamp(14px,4vw,24px);
 
 }
 
-.logo{
+.logo-wrap{
 
 max-width:180px;
 
@@ -1079,6 +1087,62 @@ transform:
 translateY(-120px)
 
 scale(1.4);
+
+}
+
+}
+
+/*=====================================
+ACCESO DE EMERGENCIA (botón discreto)
+=====================================*/
+/* Solo para respaldo cuando falla el internet de la tablet: un
+   círculo casi invisible, del mismo tono rosado del logo, escondido
+   encima de la letra E de "MOVE" (arriba a la derecha, dentro del
+   logo-wrap) — así nadie lo toca sin querer y nadie más lo nota. */
+
+.btn-acceso-emergencia{
+
+position:absolute;
+
+top:26%;
+
+right:3%;
+
+width:26px;
+
+height:26px;
+
+padding:0;
+
+border:none;
+
+border-radius:50%;
+
+background:rgba(239,75,155,0.07);
+
+cursor:pointer;
+
+z-index:5;
+
+-webkit-tap-highlight-color:transparent;
+
+transition:background .2s ease, transform .15s ease;
+
+}
+
+.btn-acceso-emergencia:active{
+
+background:rgba(239,75,155,0.22);
+
+transform:scale(.88);
+
+}
+
+@media (hover:hover){
+
+.btn-acceso-emergencia:hover{
+
+background:rgba(239,75,155,0.16);
 
 }
 

@@ -1144,3 +1144,22 @@ actualizarDots();
 message.innerHTML=
 
 waitingMessages[0];
+
+// -------------------------------------
+// Acceso de emergencia: botón discreto (esquina inferior derecha) que
+// lleva a la página con toda la información de clases, precios, clase
+// de prueba y ficha de inscripción — para cuando falla el internet de
+// la tablet y hay que mostrarle algo a alguien ahí mismo. Como este
+// dispositivo corre en modo pantalla completa (sin pestañas), navega
+// en la misma pantalla en vez de abrir una pestaña nueva que nadie
+// vería. Para volver al biométrico después, hay que volver a entrar a
+// su link de siempre.
+const LINK_INFO_EMERGENCIA =
+  "https://movedancea-spec.github.io/move-recepcion2-sin-biometrico/";
+
+const btnAccesoEmergencia = document.getElementById("btnAccesoEmergencia");
+if (btnAccesoEmergencia) {
+  btnAccesoEmergencia.addEventListener("click", () => {
+    window.location.href = LINK_INFO_EMERGENCIA;
+  });
+}
