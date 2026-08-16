@@ -1096,17 +1096,21 @@ scale(1.4);
 ACCESO DE EMERGENCIA (botón discreto)
 =====================================*/
 /* Solo para respaldo cuando falla el internet de la tablet: un
-   círculo casi invisible, del mismo tono rosado del logo, escondido
-   encima de la letra E de "MOVE" (arriba a la derecha, dentro del
-   logo-wrap) — así nadie lo toca sin querer y nadie más lo nota. */
+   círculo casi invisible, escondido en el hueco blanco de la letra O
+   de "MOVE" (dentro del logo-wrap) — así nadie lo toca sin querer y
+   nadie más lo nota. Centrado con left/top + transform en vez de
+   right, porque el centro del hueco de la O no cae justo en una
+   esquina del logo. */
 
 .btn-acceso-emergencia{
 
 position:absolute;
 
-top:26%;
+left:43.5%;
 
-right:3%;
+top:37%;
+
+transform:translate(-50%,-50%);
 
 width:26px;
 
@@ -1134,7 +1138,7 @@ transition:background .2s ease, transform .15s ease;
 
 background:rgba(239,75,155,0.22);
 
-transform:scale(.88);
+transform:translate(-50%,-50%) scale(.88);
 
 }
 
