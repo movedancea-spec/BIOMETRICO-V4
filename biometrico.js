@@ -130,6 +130,9 @@ document.getElementById("btnNoSoyYo");
 const btnNoSoyYoMaestra =
 document.getElementById("btnNoSoyYoMaestra");
 
+const btnModoRecogida =
+document.getElementById("btnModoRecogida");
+
 const photoRing =
 document.querySelector(".photo-ring");
 
@@ -202,6 +205,26 @@ let previewActivo=false;
 let previewTimeout=null;
 
 let tipoActual=null;
+
+// La recogida se inicia explícitamente para que un código temporal de
+// tres dígitos nunca se confunda con un código normal de asistencia.
+let modoRecogida=false;
+
+btnModoRecogida?.addEventListener("click",()=>{
+
+if(previewActivo) return;
+
+modoRecogida=!modoRecogida;
+codigo="";
+actualizarDots();
+message.innerHTML=modoRecogida
+? "🔐 Ingresa el código de recogida"
+: waitingMessages[0];
+btnModoRecogida.textContent=modoRecogida
+? "← Volver a asistencia"
+: "🔐 Validar código de recogida";
+
+});
 
 // -------------------------------------
 // RELOJ
@@ -540,7 +563,7 @@ body:JSON.stringify({
 
 codigo:codigo,
 
-accion:"buscar"
+accion:modoRecogida ? "buscarRecogida" : "buscar"
 
 })
 
@@ -601,7 +624,7 @@ body:JSON.stringify({
 
 codigo:codigo,
 
-accion:"confirmar",
+accion:tipoActual==="recogida" ? "confirmarRecogida" : "confirmar",
 
 tipo:tipoActual,
 
@@ -699,6 +722,20 @@ studentConfirm.style.display="none";
 
 }
 
+else if(datos.tipo==="recogida"){
+
+photoRing.classList.remove("photo-ring-maestra");
+
+message.innerHTML="🔐 <strong>Código de recogida válido</strong><br>Confirma la entrega de esta alumna.";
+
+pad.style.display="none";
+
+teacherActions.style.display="none";
+
+studentConfirm.style.display="flex";
+
+}
+
 else{
 
 photoRing.classList.remove("photo-ring-maestra");
@@ -793,6 +830,14 @@ message.innerHTML =
 
 else{
 
+if(datos.tipo==="recogida"){
+
+message.innerHTML="✅ Recogida validada. El código quedó desactivado.";
+
+}
+
+else{
+
 const frase=
 
 successMessages[
@@ -806,6 +851,8 @@ Math.random()*successMessages.length
 ];
 
 message.innerHTML=frase;
+
+}
 
 }
 
@@ -924,6 +971,10 @@ function reiniciar(){
 previewActivo=false;
 
 tipoActual=null;
+
+modoRecogida=false;
+
+if(btnModoRecogida) btnModoRecogida.textContent="🔐 Validar código de recogida";
 
 photoRing.classList.remove("photo-ring-maestra");
 

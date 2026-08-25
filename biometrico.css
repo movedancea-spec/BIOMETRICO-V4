@@ -1151,3 +1151,18 @@ background:rgba(239,75,155,0.16);
 }
 
 }
+
+/* Código temporal para que otra persona autorizada retire a una alumna. */
+.btn-modo-recogida{
+display:block;
+width:100%;
+max-width:330px;
+margin:18px auto 0;
+padding:12px 16px;
+border:2px solid #ef4b9b;
+border-radius:14px;
+background:#fff;
+color:#c92d76;
+font:700 14px Poppins,sans-serif;
+cursor:pointer;
+}
