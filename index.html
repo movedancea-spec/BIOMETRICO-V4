@@ -34,8 +34,6 @@
     <div id="title" class="title">
         Registro de Asistencia
     </div>
-    <!-- Decoración de temporada: banner chico del tema del mes (ver biometrico.js) -->
-    <p class="tema-banner" id="temaBanner" hidden></p>
     <!-- Saludo -->
     <div id="greeting" class="greeting">
         Bienvenida
@@ -61,6 +59,12 @@
     <div id="message" class="message">
         Ingresa tu código
     </div>
+    <!-- Decoración de temporada: banner chico del tema del mes (ver biometrico.js).
+         Va después de #message a propósito — #message es el mismo div que muestra
+         tanto la frase motivacional de la pantalla de reposo ("Hoy será un gran
+         día") como la de la pantalla de confirmación con foto ("El escenario te
+         espera"), así que colocarlo aquí lo deja debajo de esa frase en ambas. -->
+    <p class="tema-banner" id="temaBanner" hidden></p>
     <!-- Cumpleaños -->
     <div
         id="birthday"

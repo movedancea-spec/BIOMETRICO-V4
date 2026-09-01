@@ -136,6 +136,9 @@ document.getElementById("btnModoRecogida");
 const photoRing =
 document.querySelector(".photo-ring");
 
+const logoWrap =
+document.querySelector(".logo-wrap");
+
 // -------------------------------------
 // MENSAJES
 // -------------------------------------
@@ -670,6 +673,8 @@ previewActivo=true;
 
 tipoActual=datos.tipo;
 
+if(logoWrap) logoWrap.style.display="none";
+
 clearTimeout(previewTimeout);
 
 previewTimeout=setTimeout(()=>{
@@ -973,6 +978,8 @@ previewActivo=false;
 tipoActual=null;
 
 modoRecogida=false;
+
+if(logoWrap) logoWrap.style.display="";
 
 if(btnModoRecogida) btnModoRecogida.textContent="🔐 Validar código de recogida";
 
