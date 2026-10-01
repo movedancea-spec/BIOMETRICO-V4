@@ -1304,9 +1304,17 @@ function obtenerTemaDelDia() {
   const forzado = new URLSearchParams(window.location.search).get("temaPrueba");
   if (forzado && EMOJIS_TEMA[forzado]) return forzado;
 
-  const hoy = new Date();
-  const mes = hoy.getMonth() + 1; // 1-12
-  const claveDia = `${mes}-${hoy.getDate()}`;
+  // Mes y día de HOY en hora de Guatemala (no la del dispositivo), para
+  // que el tema cambie a la medianoche de Guatemala aunque la tablet
+  // tenga mal la zona horaria.
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Guatemala",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(new Date());
+  const mes = Number(partes.find((p) => p.type === "month").value); // 1-12
+  const dia = Number(partes.find((p) => p.type === "day").value);
+  const claveDia = `${mes}-${dia}`;
 
   return TEMA_POR_DIA_ESPECIFICO[claveDia] || TEMA_POR_MES[mes] || null;
 }
