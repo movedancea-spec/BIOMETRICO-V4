@@ -1225,6 +1225,12 @@ animation-direction:alternate;
 100%{ transform:translate(18px,-24px) rotate(10deg); opacity:1; }
 }
 
+/* Si el dispositivo pide "reducir movimiento", no se animan partículas
+   (el letrero y el color sí se quedan). Igual que en el Portal. */
+@media (prefers-reduced-motion: reduce){
+.tema-particula{ display:none; }
+}
+
 .tema-banner{
 display:inline-block;
 max-width:92%;
