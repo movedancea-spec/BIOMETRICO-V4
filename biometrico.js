@@ -5,6 +5,29 @@
 
 const WORKER_URL = "https://move-checkin-v2.movedancea.workers.dev";
 
+// Códigos del curso de vacaciones (Move Vacation Camp). NO viven en
+// move-checkin-v2: si ese Worker no encuentra el código (no es alumna
+// ni maestra), se pregunta al Worker del portal, que revisa si hoy hay
+// curso para esa participante y guarda la marcación en su propia tabla
+// (ASISTENCIA VACATION CAMP), sin tocar la asistencia de las alumnas.
+// En localhost (prueba con `wrangler dev`) se usa el Worker local, igual
+// que en recepcion.js; en el kiosko de verdad, siempre el publicado.
+const WORKER_PORTAL_URL = ["localhost", "127.0.0.1"].includes(location.hostname)
+? "http://localhost:8787"
+: "https://portalalumnas.movedancea.workers.dev";
+
+async function llamarPortal(accion){
+
+const respuesta=await fetch(WORKER_PORTAL_URL,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({accion,codigo})
+});
+
+return await respuesta.json().catch(()=>({success:false}));
+
+}
+
 // ----------------------------
 // SONIDOS (generados por código, sin archivos .mp3)
 // ----------------------------
@@ -132,6 +155,9 @@ document.getElementById("btnNoSoyYoMaestra");
 
 const btnModoRecogida =
 document.getElementById("btnModoRecogida");
+
+const photoInicial =
+document.getElementById("photoInicial");
 
 const photoRing =
 document.querySelector(".photo-ring");
@@ -282,9 +308,14 @@ setInterval(updateClock,1000);
 // MENSAJES ROTATIVOS
 // -------------------------------------
 
+// Hasta cuándo se deja quieto un mensaje de error (ver mostrarError).
+let mensajeFijoHasta=0;
+
 function rotateMessage(){
 
 if(studentName.innerHTML!="") return;
+
+if(Date.now()<mensajeFijoHasta) return;
 
 message.animate(
 
@@ -319,6 +350,9 @@ fill:"forwards"
 );
 
 setTimeout(()=>{
+
+// Si en estos 250 ms apareció un error o una persona, no se tapa.
+if(studentName.innerHTML!="" || Date.now()<mensajeFijoHasta) return;
 
 waitingIndex++;
 
@@ -578,6 +612,32 @@ const datos=await respuesta.json();
 
 if(!datos.success){
 
+// Los códigos de recogida nunca son del campamento.
+if(!modoRecogida){
+
+const camp=await llamarPortal("campKioskoBuscar");
+
+if(camp.success){
+
+mostrarPreview(camp);
+
+return;
+
+}
+
+// Es del campamento pero hoy no se puede marcar (fuera de fechas,
+// fin de semana, día sin curso, o ya marcó entrada y salida): un
+// mensaje amable en vez de "Código no encontrado".
+if(camp.encontrado && camp.mensaje){
+
+mostrarError("💗 "+camp.mensaje);
+
+return;
+
+}
+
+}
+
 mostrarError("❌ Código no encontrado");
 
 return;
@@ -606,6 +666,36 @@ mostrarError("⚠ Error de conexión");
 async function confirmarAsistencia(tipoRegistro){
 
 message.innerHTML="⏳ Registrando...";
+
+if(tipoActual==="campamento"){
+
+try{
+
+const datos=await llamarPortal("campKioskoMarcar");
+
+if(!datos.success){
+
+mostrarError(datos.mensaje ? "💗 "+datos.mensaje : "❌ Código no encontrado");
+
+return;
+
+}
+
+mostrarBienvenida(datos);
+
+}
+
+catch(e){
+
+console.error(e);
+
+mostrarError("⚠ Error de conexión");
+
+}
+
+return;
+
+}
 
 try{
 
@@ -664,6 +754,44 @@ mostrarError("⚠ Error de conexión");
 }
 
 // -------------------------------------
+// FOTO Y NOMBRE
+// Antes, si alguien no tenía foto, se quedaba la foto de la persona
+// anterior. Ahora, sin foto se muestra un círculo con su inicial.
+// El nombre va con textContent (no innerHTML): los nombres del curso
+// de vacaciones los escriben los papás en una ficha pública.
+// -------------------------------------
+
+function ponerFotoYNombre(datos){
+
+const nombre=String(datos.nombre||"");
+
+studentName.textContent=nombre;
+
+if(datos.foto && datos.foto.length && datos.foto[0].url){
+
+photo.src=datos.foto[0].url;
+
+photo.hidden=false;
+
+photoInicial.hidden=true;
+
+}
+
+else{
+
+photo.removeAttribute("src");
+
+photo.hidden=true;
+
+photoInicial.textContent=(nombre.trim()[0]||"★").toUpperCase();
+
+photoInicial.hidden=false;
+
+}
+
+}
+
+// -------------------------------------
 // MOSTRAR VISTA PREVIA (antes de confirmar)
 // -------------------------------------
 
@@ -689,13 +817,7 @@ reiniciar();
 
 photoContainer.style.display="flex";
 
-if(datos.foto && datos.foto.length){
-
-photo.src=datos.foto[0].url;
-
-}
-
-studentName.innerHTML=datos.nombre;
+ponerFotoYNombre(datos);
 
 registerTime.innerHTML="";
 
@@ -724,6 +846,22 @@ pad.style.display="none";
 teacherActions.style.display="flex";
 
 studentConfirm.style.display="none";
+
+}
+
+else if(datos.tipo==="campamento"){
+
+photoRing.classList.remove("photo-ring-maestra");
+
+const accionCamp = datos.siguiente==="SALIDA" ? "salida" : "entrada";
+
+message.innerHTML="🌴 ¿Eres tú? Presiona ✓ para marcar tu <strong>"+accionCamp+"</strong>";
+
+pad.style.display="none";
+
+teacherActions.style.display="none";
+
+studentConfirm.style.display="flex";
 
 }
 
@@ -809,13 +947,7 @@ playSuccessSound();
 
 photoContainer.style.display="flex";
 
-if(datos.foto && datos.foto.length){
-
-photo.src=datos.foto[0].url;
-
-}
-
-studentName.innerHTML=datos.nombre;
+ponerFotoYNombre(datos);
 
 teacherActions.style.display="none";
 
@@ -838,6 +970,14 @@ else{
 if(datos.tipo==="recogida"){
 
 message.innerHTML="✅ Recogida validada. El código quedó desactivado.";
+
+}
+
+else if(datos.tipo==="campamento"){
+
+message.innerHTML = datos.tipoRegistro==="SALIDA"
+? "✅ Salida registrada. ¡Hasta pronto! 👋"
+: "✅ Entrada registrada. ¡Bienvenida! 🌴";
 
 }
 
@@ -936,6 +1076,10 @@ reiniciar();
 function mostrarError(texto){
 
 playErrorSound();
+
+// Los mensajes de reposo cambian cada 5 s; sin esto, un error (p. ej.
+// "Este código no está activo hoy") podía desaparecer casi al instante.
+mensajeFijoHasta=Date.now()+6000;
 
 previewActivo=false;
 

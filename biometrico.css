@@ -1314,3 +1314,33 @@ body.tema-navidad{ --tema-color:31,157,99; }
 body[class*="tema-"] .container{
 box-shadow:0 20px 60px rgba(var(--tema-color),.20),0 6px 15px rgba(0,0,0,.05);
 }
+
+/*=====================================
+SIN FOTO: círculo con la inicial (usa el mismo tamaño que .photo,
+porque el div también lleva la clase "photo")
+=====================================*/
+
+.photo-inicial{
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+background:#fff4fb;
+
+color:#ef4b9b;
+
+font-weight:800;
+
+font-size:clamp(48px,12vw,72px);
+
+}
+
+.photo-inicial[hidden],
+.photo[hidden]{
+
+display:none;
+
+}
