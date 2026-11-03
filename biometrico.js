@@ -979,6 +979,29 @@ message.innerHTML = datos.tipoRegistro==="SALIDA"
 ? "✅ Salida registrada. ¡Hasta pronto! 👋"
 : "✅ Entrada registrada. ¡Bienvenida! 🌴";
 
+// Paquete de X días (cursos "Por clases"): "Día 3 de 4" y, al pasarse,
+// el aviso del Worker. La entrada ya quedó registrada. Va con
+// textContent: el texto viene del Worker.
+if(datos.diasPaquete){
+
+const dia=document.createElement("div");
+
+dia.textContent="📦 Día "+datos.diasPaquete;
+
+message.appendChild(dia);
+
+}
+
+if(datos.aviso){
+
+const aviso=document.createElement("div");
+
+aviso.textContent="💗 "+datos.aviso;
+
+message.appendChild(aviso);
+
+}
+
 }
 
 else{
