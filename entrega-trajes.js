@@ -14,6 +14,13 @@
 //   Recepción apaga el interruptor (si estaba a media entrega, al terminarla).
 // - Nunca guarda la clave, solo el permiso.
 // - Las fotos se comprimen aquí (JPG de 1600 px) antes de subirlas.
+// - Android (2026-11-17): la cámara se abre con un botón que llama a
+//   input.click() en el mismo toque (sin nada asíncrono antes; un input con
+//   display:none + <label> falla en algunos navegadores de Android). Si
+//   Android recarga la página al volver de la cámara por falta de memoria,
+//   la entrega a medias (código, alumna, trajes y fotos ya tomadas) vuelve
+//   de sessionStorage + IndexedDB y espera la foto. "🖼️ Elegir de la
+//   galería" es el respaldo sin capture.
 // - Sin señal: se avisa y no se guarda nada a medias. El reintento manda el
 //   mismo ID de entrega, así nunca se duplica.
 // biometrico.js no se toca: si este archivo no carga, el biométrico sigue
@@ -29,6 +36,10 @@
   const LADO_MAXIMO_FOTO = 1600;
   const BYTES_MAXIMOS_FOTO = 900 * 1024;
   const MAX_FOTOS = 8;
+  const ES_LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname);
+  // Entrega a medias por si Android recarga la página al volver de la cámara.
+  const LLAVE_EN_CURSO = "move_entrega_trajes_en_curso";
+  const MINUTOS_EN_CURSO = 30;
 
   let permitido = false; // el interruptor de Recepción
   let pantalla = ""; // clave | codigo | trajes | fotos | enviando | error | exito
@@ -134,34 +145,248 @@
     return datos;
   }
 
-  // Foto de la cámara → JPG de máximo 1600 px. Se prueba con menos calidad
-  // si quedó pesada (el Worker acepta hasta 1.2 MB).
-  async function comprimir(archivo) {
-    let fuente;
-    try {
-      fuente = await createImageBitmap(archivo, { imageOrientation: "from-image" });
-    } catch (e) {
-      fuente = await new Promise((ok, mal) => {
+  // Foto de la cámara o la galería → JPG de máximo 1600 px. Se prueba con
+  // menos calidad si quedó pesada (el Worker acepta hasta 1.2 MB).
+  // Android: una foto de 12–50 MP decodificada entera ocupa 50–200 MB y el
+  // canvas puede fallar sin avisar. Por eso primero se mide (el <img> lee el
+  // tamaño ya girado según el EXIF) y createImageBitmap la reduce AL
+  // DECODIFICAR (resizeWidth/resizeHeight). Si el navegador no puede, se
+  // decodifica entera y se reduce a la mitad por pasos.
+  class FotoNoSirve extends Error {}
+  const esHeic = (archivo) => /hei[cf]/i.test(archivo.type || "") || /\.hei[cf]$/i.test(archivo.name || "");
+  const conTiempo = (promesa, segundos) =>
+    Promise.race([promesa, new Promise((_, mal) => setTimeout(() => mal(new Error("tiempo")), segundos * 1000))]);
+
+  function abrirComoImagen(archivo) {
+    return conTiempo(
+      new Promise((ok, mal) => {
+        const url = URL.createObjectURL(archivo);
         const img = new Image();
-        img.onload = () => ok(img);
-        img.onerror = () => mal(new Error("No se pudo leer la foto."));
-        img.src = URL.createObjectURL(archivo);
-      });
-    }
-    const ancho = fuente.width || fuente.naturalWidth;
-    const alto = fuente.height || fuente.naturalHeight;
+        img.onload = () => ok({ img, soltar: () => URL.revokeObjectURL(url) });
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          mal(new Error("No se pudo leer la foto."));
+        };
+        img.src = url;
+      }),
+      30
+    );
+  }
+
+  function medidaFinal(ancho, alto) {
     const escala = Math.min(1, LADO_MAXIMO_FOTO / Math.max(ancho, alto));
+    return { ancho: Math.max(1, Math.round(ancho * escala)), alto: Math.max(1, Math.round(alto * escala)) };
+  }
+
+  // Reduce a la mitad hasta quedar cerca del tamaño final (dibujar de un
+  // golpe 6000 px en 1600 px se ve pixelado y en Android a veces falla).
+  function reducirPorPasos(fuente, ancho, alto) {
+    const final = medidaFinal(ancho, alto);
+    let actual = fuente;
+    let w = ancho;
+    let h = alto;
+    while (w / 2 >= final.ancho * 1.2) {
+      w = Math.round(w / 2);
+      h = Math.round(h / 2);
+      const paso = document.createElement("canvas");
+      paso.width = w;
+      paso.height = h;
+      paso.getContext("2d").drawImage(actual, 0, 0, w, h);
+      if (actual instanceof HTMLCanvasElement) actual.width = 0; // soltar memoria
+      actual = paso;
+    }
+    return { actual, final };
+  }
+
+  async function comprimir(archivo) {
+    if (archivo.type && !/^image\//i.test(archivo.type)) throw new FotoNoSirve("Ese archivo no es una foto. Toma otra.");
     const lienzo = document.createElement("canvas");
-    lienzo.width = Math.round(ancho * escala);
-    lienzo.height = Math.round(alto * escala);
-    lienzo.getContext("2d").drawImage(fuente, 0, 0, lienzo.width, lienzo.height);
+    const ctx = lienzo.getContext("2d");
+    let listo = false;
+
+    // 1) Medir y reducir al decodificar.
+    try {
+      const { img, soltar } = await abrirComoImagen(archivo);
+      const final = medidaFinal(img.naturalWidth, img.naturalHeight);
+      soltar();
+      const bitmap = await conTiempo(
+        createImageBitmap(archivo, { imageOrientation: "from-image", resizeWidth: final.ancho, resizeHeight: final.alto, resizeQuality: "high" }),
+        30
+      );
+      lienzo.width = bitmap.width;
+      lienzo.height = bitmap.height;
+      ctx.drawImage(bitmap, 0, 0);
+      if (bitmap.close) bitmap.close();
+      listo = true;
+    } catch (e) {}
+
+    // 2) Respaldo: decodificar entera y reducir por pasos.
+    if (!listo) {
+      let fuente = null;
+      let soltar = () => {};
+      try {
+        fuente = await conTiempo(createImageBitmap(archivo, { imageOrientation: "from-image" }), 30);
+      } catch (e) {
+        try {
+          const abierta = await abrirComoImagen(archivo);
+          fuente = abierta.img;
+          soltar = abierta.soltar;
+        } catch (e2) {
+          throw new FotoNoSirve(
+            esHeic(archivo)
+              ? "Este navegador no puede abrir fotos HEIC. Usa «📷 Tomar foto» o elige una foto JPG."
+              : "No se pudo abrir esa foto. Toma otra o elígela de la galería."
+          );
+        }
+      }
+      try {
+        const ancho = fuente.width || fuente.naturalWidth;
+        const alto = fuente.height || fuente.naturalHeight;
+        const { actual, final } = reducirPorPasos(fuente, ancho, alto);
+        lienzo.width = final.ancho;
+        lienzo.height = final.alto;
+        ctx.drawImage(actual, 0, 0, final.ancho, final.alto);
+        if (actual instanceof HTMLCanvasElement) actual.width = 0;
+      } catch (e) {
+        throw new FotoNoSirve("La foto es demasiado grande para este celular. Toma otra con menos resolución o elígela de la galería.");
+      } finally {
+        if (fuente && fuente.close) fuente.close();
+        soltar();
+      }
+    }
+
     let blob = null;
     for (const calidad of [0.82, 0.7, 0.58, 0.45]) {
       blob = await new Promise((ok) => lienzo.toBlob(ok, "image/jpeg", calidad));
       if (blob && blob.size <= BYTES_MAXIMOS_FOTO) break;
     }
-    if (!blob) throw new Error("No se pudo preparar la foto.");
+    lienzo.width = 0;
+    if (!blob || !blob.size) throw new FotoNoSirve("No se pudo preparar la foto en este celular. Toma otra o elígela de la galería.");
     return blob;
+  }
+
+  // ---------- Entrega a medias (si Android recarga la página) ----------
+  // sessionStorage: código, alumna, trajes marcados y si la cámara estaba
+  // abierta (se escribe ANTES de abrirla, en el mismo toque). IndexedDB: las
+  // fotos ya tomadas (ya comprimidas, unos 300 KB cada una). Todo es "mejor
+  // esfuerzo": si el navegador no deja guardar, la entrega sigue igual.
+  const BASE_FOTOS = "move-entrega-trajes";
+  function abrirBaseFotos() {
+    return new Promise((ok, mal) => {
+      if (!window.indexedDB) return mal(new Error("sin IndexedDB"));
+      const pedido = indexedDB.open(BASE_FOTOS, 1);
+      pedido.onupgradeneeded = () => pedido.result.createObjectStore("fotos");
+      pedido.onsuccess = () => ok(pedido.result);
+      pedido.onerror = () => mal(pedido.error);
+    });
+  }
+  async function enBaseFotos(modo, hacer) {
+    const db = await abrirBaseFotos();
+    try {
+      return await new Promise((ok, mal) => {
+        const tx = db.transaction("fotos", modo);
+        const pedido = hacer(tx.objectStore("fotos"));
+        tx.oncomplete = () => ok(pedido && pedido.result);
+        tx.onerror = () => mal(tx.error);
+        tx.onabort = () => mal(tx.error);
+      });
+    } finally {
+      db.close();
+    }
+  }
+  const guardarFotoEnBase = (id, blob) => enBaseFotos("readwrite", (st) => st.put(blob, id)).catch(() => {});
+  const leerFotoDeBase = (id) => enBaseFotos("readonly", (st) => st.get(id)).catch(() => null);
+  const vaciarBaseFotos = () => enBaseFotos("readwrite", (st) => st.clear()).catch(() => {});
+
+  let restaurando = false; // mientras vuelven las fotos de IndexedDB
+  function guardarEnCurso(camaraAbierta = false) {
+    if (restaurando || !alumna || !elegidos.size) return;
+    try {
+      sessionStorage.setItem(
+        LLAVE_EN_CURSO,
+        JSON.stringify({ codigo, alumna, elegidos: [...elegidos], entregaId, fotoIds: fotos.map((f) => f.id), camaraAbierta, guardado: Date.now() })
+      );
+    } catch (e) {}
+  }
+  function borrarEnCurso() {
+    try {
+      sessionStorage.removeItem(LLAVE_EN_CURSO);
+    } catch (e) {}
+    vaciarBaseFotos();
+  }
+
+  // Al cargar la página: si había una entrega a medias (y el permiso sigue),
+  // vuelve a la pantalla de fotos. El Worker revisa todo otra vez al
+  // confirmar, así que una alumna o un traje que cambió no se cuela.
+  function restaurarEnCurso() {
+    let g = null;
+    try {
+      g = JSON.parse(sessionStorage.getItem(LLAVE_EN_CURSO) || "null");
+    } catch (e) {}
+    if (!g) return;
+    const vigente = g.alumna && Array.isArray(g.alumna.trajes) && Date.now() - Number(g.guardado) < MINUTOS_EN_CURSO * 60000;
+    if (!vigente || !permisoActual()) return borrarEnCurso();
+    const pendientes = new Set(g.alumna.trajes.filter((t) => !t.entregado).map((t) => t.asignacionId));
+    const marcados = (g.elegidos || []).filter((id) => pendientes.has(id));
+    if (!marcados.length) return borrarEnCurso();
+    codigo = String(g.codigo || "");
+    alumna = g.alumna;
+    elegidos = new Set(marcados);
+    // El mismo ID: si la página se recargó mientras se guardaba y la entrega
+    // sí quedó, reintentar devuelve esa misma (nunca una segunda).
+    entregaId = marcados.length === (g.elegidos || []).length ? String(g.entregaId || "") : "";
+    restaurando = true;
+    $("etCapa").hidden = false;
+    document.body.classList.add("et-activo");
+    $("btnModoEntregaTrajes").hidden = true;
+    mostrar("fotos");
+    if (g.camaraAbierta) {
+      $("etAvisoFotos").textContent =
+        "📱 La página se recargó al volver de la cámara (pasa en algunos Android con poca memoria). La entrega sigue aquí: toma la foto otra vez o elígela de la galería.";
+      $("etAvisoFotos").hidden = false;
+    }
+    (async () => {
+      for (const id of g.fotoIds || []) {
+        const blob = await leerFotoDeBase(id);
+        if (!(blob instanceof Blob) || pantalla !== "fotos" || fotos.length >= MAX_FOTOS) continue;
+        fotos.push({ id, blob, url: URL.createObjectURL(blob), archivo: "" });
+      }
+      restaurando = false;
+      if (pantalla === "fotos") pintarFotos();
+      guardarEnCurso(false);
+    })();
+  }
+
+  // ---------- Navegador dentro de WhatsApp / Facebook ----------
+  // Su navegador interno a veces no abre la cámara ni deja elegir fotos.
+  // (En local, ?ua=whatsapp|facebook|webview lo simula para probar.)
+  function navegadorDeApp() {
+    const prueba = ES_LOCAL ? new URLSearchParams(location.search).get("ua") : null;
+    const ua = prueba ? { whatsapp: "WhatsApp/2.24 Android", facebook: "FBAN/FB4A;FBAV/450 Android", webview: "Android 14; wv) Chrome" }[prueba] || "" : navigator.userAgent || "";
+    if (/FBAN|FBAV|FB_IAB|FBIOS|Instagram/i.test(ua)) return "Facebook";
+    if (/WhatsApp/i.test(ua)) return "WhatsApp";
+    if (/Android/i.test(ua) && /; wv\)/.test(ua)) return "otra app";
+    return "";
+  }
+  function pintarAvisoApp() {
+    const app = navegadorDeApp();
+    const aviso = $("etAvisoApp");
+    if (!app) return (aviso.hidden = true);
+    const android = /Android/i.test(navigator.userAgent || "") || ES_LOCAL;
+    aviso.innerHTML = "";
+    aviso.appendChild(
+      crear(
+        "p",
+        "",
+        `⚠️ Esta página está abierta dentro de ${app === "otra app" ? "otra aplicación" : app}, y ahí la cámara puede no funcionar. Ábrela en ${android ? "Chrome" : "Safari"} (menú ⋮ → «Abrir en ${android ? "Chrome" : "el navegador"}»).`
+      )
+    );
+    if (android) {
+      const enlace = crear("a", "et-btn et-btn-secundario", "Abrir en Chrome");
+      enlace.href = `intent://${location.host}${location.pathname}${location.search}#Intent;scheme=${location.protocol.replace(":", "")};package=com.android.chrome;end`;
+      aviso.appendChild(enlace);
+    }
+    aviso.hidden = false;
   }
 
   // ---------- Pantallas ----------
@@ -176,6 +401,7 @@
         <div class="et-barra-textos"><span class="et-barra-titulo">👗 Entrega de trajes</span><span class="et-barra-pista">Solo en este celular · no marca asistencia</span></div>
         <button id="etBtnVolverAsistencia" class="et-btn-volver" type="button">↩ Volver a asistencia</button>
       </div>
+      <div id="etAvisoApp" class="et-aviso-app" role="alert" hidden></div>
       <section class="et-pantalla" id="etClave" hidden>
         <p class="et-grande">🔐 Clave de Recepción</p>
         <p class="et-texto">Escribe la clave de Recepción para usar ESTE celular en modo entrega de trajes durante 12 horas. Los demás biométricos siguen marcando asistencia.</p>
@@ -201,8 +427,11 @@
         <p class="et-nombre" id="etNombre2"></p>
         <p class="et-texto" id="etResumenFotos"></p>
         <p class="et-texto">Toma una foto de la persona que recibe <strong>con el traje</strong>. Al menos una.</p>
-        <label class="et-btn et-btn-camara" for="etInputFoto">📷 Tomar foto</label>
-        <input id="etInputFoto" type="file" accept="image/*" capture="environment" hidden />
+        <p id="etAvisoFotos" class="et-aviso-recarga" role="status" hidden></p>
+        <button id="etBtnCamara" class="et-btn et-btn-camara" type="button">📷 Tomar foto</button>
+        <button id="etBtnGaleria" class="et-btn et-btn-galeria" type="button">🖼️ Elegir de la galería</button>
+        <input id="etInputFoto" class="et-input-archivo" type="file" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true" />
+        <input id="etInputGaleria" class="et-input-archivo" type="file" accept="image/*" multiple tabindex="-1" aria-hidden="true" />
         <div id="etMiniaturas" class="et-miniaturas"></div>
         <p id="etMsgFotos" class="et-msg" role="alert"></p>
         <button id="etBtnConfirmar" class="et-btn et-btn-confirmar" type="button" disabled>✅ Confirmar entrega</button>
@@ -267,7 +496,13 @@
     $("etBtnAFotos").addEventListener("click", () => mostrar("fotos"));
     $("etBtnCancelar1").addEventListener("click", volverAlCodigo);
     $("etBtnAtras").addEventListener("click", () => mostrar("trajes"));
-    $("etInputFoto").addEventListener("change", agregarFoto);
+    $("etBtnCamara").addEventListener("click", () => abrirSelector($("etInputFoto")));
+    $("etBtnGaleria").addEventListener("click", () => abrirSelector($("etInputGaleria")));
+    ["etInputFoto", "etInputGaleria"].forEach((id) => {
+      $(id).addEventListener("change", agregarFoto);
+      // Cerró la cámara sin foto: ya no está "abierta".
+      $(id).addEventListener("cancel", () => guardarEnCurso(false));
+    });
     $("etBtnConfirmar").addEventListener("click", revisarAntesDeConfirmar);
     $("etBtnReintentar").addEventListener("click", () => accionReintentar && accionReintentar());
     $("etBtnCancelarError").addEventListener("click", volverAlCodigo);
@@ -284,7 +519,10 @@
     const ids = { clave: "etClave", codigo: "etCodigo", trajes: "etTrajes", fotos: "etFotos", enviando: "etEnviando", error: "etError", exito: "etExito" };
     Object.entries(ids).forEach(([n, id]) => ($(id).hidden = n !== nombre));
     if (nombre === "trajes") pintarTrajes();
-    if (nombre === "fotos") pintarFotos();
+    if (nombre === "fotos") {
+      pintarFotos();
+      guardarEnCurso(false);
+    }
     if (nombre === "clave") setTimeout(() => $("etInputClave").focus(), 50);
     // Mientras se guarda no se puede salir (la entrega quedaría sin saber).
     $("etBtnVolverAsistencia").hidden = nombre === "enviando";
@@ -323,6 +561,8 @@
 
   function limpiarEntrega() {
     clearInterval(temporizadorExito);
+    borrarEnCurso();
+    if ($("etAvisoFotos")) $("etAvisoFotos").hidden = true;
     fotos.forEach((f) => URL.revokeObjectURL(f.url));
     fotos = [];
     elegidos = new Set();
@@ -500,29 +740,57 @@
         URL.revokeObjectURL(f.url);
         fotos.splice(i, 1);
         pintarFotos();
+        guardarEnCurso(false);
       });
       caja.append(img, quitar);
       cont.appendChild(caja);
     });
-    const etiqueta = document.querySelector('label[for="etInputFoto"]');
-    etiqueta.textContent = fotos.length ? "📷 Tomar otra foto" : "📷 Tomar foto";
-    etiqueta.classList.toggle("et-deshabilitado", fotos.length >= MAX_FOTOS);
-    $("etInputFoto").disabled = fotos.length >= MAX_FOTOS;
+    const lleno = fotos.length >= MAX_FOTOS;
+    $("etBtnCamara").textContent = fotos.length ? "📷 Tomar otra foto" : "📷 Tomar foto";
+    $("etBtnCamara").disabled = lleno;
+    $("etBtnGaleria").disabled = lleno;
     $("etBtnConfirmar").disabled = !fotos.length;
     $("etMsgFotos").textContent = fotos.length >= MAX_FOTOS ? `Máximo ${MAX_FOTOS} fotos.` : "";
   }
 
+  // La cámara se abre EN el toque: primero se guarda la entrega (sessionStorage
+  // es inmediato) y enseguida input.click(), sin ningún await antes; Android
+  // no abre el selector si el click llega después de algo asíncrono.
+  function abrirSelector(input) {
+    if (fotos.length >= MAX_FOTOS) return;
+    $("etMsgFotos").textContent = "";
+    guardarEnCurso(true);
+    input.value = "";
+    input.click();
+  }
+
   async function agregarFoto(e) {
-    const archivo = e.target.files && e.target.files[0];
+    const archivos = [...(e.target.files || [])];
     e.target.value = "";
-    if (!archivo) return;
-    $("etMsgFotos").textContent = "Preparando la foto…";
-    try {
-      const blob = await comprimir(archivo);
-      fotos.push({ blob, url: URL.createObjectURL(blob), archivo: "" });
-      pintarFotos();
-    } catch (err) {
-      $("etMsgFotos").textContent = "No se pudo usar esa foto. Toma otra.";
+    guardarEnCurso(false);
+    if (!archivos.length) return;
+    $("etAvisoFotos").hidden = true;
+    const espacio = MAX_FOTOS - fotos.length;
+    let error = "";
+    for (const [i, archivo] of archivos.slice(0, espacio).entries()) {
+      $("etMsgFotos").textContent = archivos.length > 1 ? `Preparando foto ${i + 1} de ${Math.min(archivos.length, espacio)}…` : "Preparando la foto…";
+      try {
+        const blob = await comprimir(archivo);
+        const id = nuevoIdEntrega();
+        fotos.push({ id, blob, url: URL.createObjectURL(blob), archivo: "" });
+        pintarFotos();
+        await guardarFotoEnBase(id, blob);
+        guardarEnCurso(false);
+      } catch (err) {
+        error = err instanceof FotoNoSirve ? err.message : "No se pudo usar esa foto. Toma otra o elígela de la galería.";
+      }
+    }
+    pintarFotos();
+    if (error) {
+      sonar("playErrorSound");
+      $("etMsgFotos").textContent = "❌ " + error;
+    } else if (archivos.length > espacio) {
+      $("etMsgFotos").textContent = `Solo se agregaron ${espacio}: máximo ${MAX_FOTOS} fotos.`;
     }
   }
 
@@ -548,6 +816,7 @@
   // ---------- Enviar ----------
   async function enviarEntrega(yaReintentoFotos = false) {
     if (!entregaId) entregaId = nuevoIdEntrega();
+    guardarEnCurso(false);
     accionReintentar = () => enviarEntrega();
     mostrar("enviando");
     try {
@@ -592,6 +861,7 @@
   }
 
   function mostrarExito(r) {
+    borrarEnCurso(); // ya quedó: una recarga ahora no debe volver a abrirla
     sonar("playSuccessSound");
     $("etExitoNombre").textContent = r.alumna || alumna.nombre;
     const bailes = r.bailes || [];
@@ -642,6 +912,8 @@
   }
 
   armar();
+  pintarAvisoApp();
+  restaurarEnCurso();
   revisarModo();
   setInterval(revisarModo, SEGUNDOS_REVISAR_MODO * 1000);
   // Al volver a la pantalla (el celular se bloqueó), se revisa enseguida.

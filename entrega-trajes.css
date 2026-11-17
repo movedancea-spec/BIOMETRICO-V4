@@ -71,6 +71,15 @@ body.et-activo{ overflow:hidden; }
 .et-btn-principal{ background:var(--et-rosa); color:#fff; }
 .et-btn-confirmar{ background:var(--et-verde); color:#fff; font-size:20px; min-height:64px; }
 .et-btn-camara{ background:#fff; color:var(--et-morado); border-color:var(--et-morado); border-style:dashed; font-size:20px; min-height:72px; display:flex; align-items:center; justify-content:center; }
+/* Respaldo sin capture (Android): galería. */
+.et-btn-galeria{ background:#fff; color:var(--et-morado); border-color:var(--et-borde); font-size:17px; }
+/* Fuera de la vista pero NO display:none: algunos navegadores de Android no
+   abren un input de archivo con display:none. */
+.et-input-archivo{ position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; clip:rect(0 0 0 0); pointer-events:none; }
+.et-aviso-recarga{ background:var(--et-ambar-suave); color:var(--et-ambar); border:1px solid #f5d9a8; border-radius:12px; padding:10px 12px; font-size:15px; font-weight:600; margin:0 0 12px; }
+.et-aviso-app{ background:var(--et-ambar-suave); color:var(--et-ambar); border:1px solid #f5d9a8; border-radius:12px; padding:12px; margin:0 0 14px; font-size:15px; font-weight:600; }
+.et-aviso-app p{ margin:0 0 10px; }
+.et-aviso-app a.et-btn{ display:flex; align-items:center; justify-content:center; text-decoration:none; margin:0; }
 .et-btn-secundario{ background:#fff; color:var(--et-gris); border-color:var(--et-borde); }
 .et-btn:focus-visible{ outline:3px solid var(--et-morado); outline-offset:2px; }
 
