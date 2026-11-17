@@ -31,6 +31,14 @@
     ? "http://localhost:8787"
     : "https://portalalumnas.movedancea.workers.dev";
   const LLAVE_PERMISO = "move_permiso_entrega_trajes";
+  // Varios celulares a la vez (2026-11-17): cada uno se identifica con un ID
+  // inventado una sola vez, así las claves equivocadas cuentan por celular y
+  // uno que se equivoca no bloquea a los demás del mismo Wi-Fi.
+  const LLAVE_DISPOSITIVO = "move_dispositivo_entrega_trajes";
+  // Si Airtable está saturado (varios celulares a la vez) el Worker espera
+  // 30 s y reintenta: el celular espera más que eso antes de decir "sin señal".
+  const SEGUNDOS_BUSCAR = 75;
+  const SEGUNDOS_CONFIRMAR = 110;
   const SEGUNDOS_REVISAR_MODO = 30;
   const SEGUNDOS_EXITO = 6;
   const LADO_MAXIMO_FOTO = 1600;
@@ -91,6 +99,20 @@
   // memoria; si no, la copia guardada es la única (y su vencimiento manda).
   let permisoEnMemoria = null;
   const permisoActual = () => leerPermiso() || (permisoEnMemoria && permisoEnMemoria.vence > Date.now() + 60000 ? permisoEnMemoria.permiso : "");
+
+  let dispositivoEnMemoria = "";
+  function idDispositivo() {
+    try {
+      let id = localStorage.getItem(LLAVE_DISPOSITIVO);
+      if (!/^[A-Za-z0-9-]{16,64}$/.test(id || "")) {
+        id = nuevoIdEntrega();
+        localStorage.setItem(LLAVE_DISPOSITIVO, id);
+      }
+      return id;
+    } catch (e) {
+      return (dispositivoEnMemoria = dispositivoEnMemoria || nuevoIdEntrega());
+    }
+  }
 
   // "10 nov, 4:30 p.m." siempre en hora de Guatemala.
   const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -604,7 +626,7 @@
     $("etBtnClave").disabled = true;
     $("etMsgClave").textContent = "Revisando…";
     try {
-      const r = await llamar({ accion: "entregaTrajesPermiso", clave });
+      const r = await llamar({ accion: "entregaTrajesPermiso", clave, dispositivo: idDispositivo() });
       if (!r.success) {
         $("etMsgClave").textContent = r.error || "No se pudo revisar la clave.";
         sonar("playErrorSound");
@@ -652,7 +674,7 @@
   async function buscar() {
     $("etMsgCodigo").textContent = "⏳ Buscando…";
     try {
-      const r = await llamar({ accion: "entregaTrajesBuscar", permiso: permisoActual(), codigo });
+      const r = await llamar({ accion: "entregaTrajesBuscar", permiso: permisoActual(), codigo }, SEGUNDOS_BUSCAR);
       if (r.sinPermiso) return permisoVencido();
       if (r.apagado) return actualizarPermitido(false);
       if (!r.success) {
@@ -837,13 +859,17 @@
         entregaId,
         asignacionIds: [...elegidos],
         fotos: fotos.map((f) => f.archivo),
-      }, 40);
+      }, SEGUNDOS_CONFIRMAR);
       if (r.success) return mostrarExito(r);
       if (r.sinPermiso) return permisoVencido();
       if (r.apagado) return entregaApagada();
       if (r.fotosFaltan && !yaReintentoFotos) {
         fotos.forEach((f) => (f.archivo = ""));
         return enviarEntrega(true);
+      }
+      if (r.yaEntregado) {
+        // Otro celular (o Recepción) lo entregó primero: no se guardó nada.
+        return mostrarError({ icono: "🎁", titulo: "Ya fue entregado", texto: r.error || "Ese traje ya fue entregado. No se guardó esta entrega.", reintentar: null });
       }
       if (r.cambio) {
         return mostrarError({ icono: "⚠️", titulo: "Algo cambió", texto: (r.error || "Vuelve a escribir el código.") + " No se guardó esta entrega.", reintentar: null });
